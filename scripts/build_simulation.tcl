@@ -1,6 +1,7 @@
 #
-# Simulation Build Script for NoC Matrix Multiply Design
+# Simulation Build Script for NoC Attention Projection Design
 # Based on Vivado-Design-Tutorials/Versal NoC simulation flow
+# Tests Q/K/V projections for IBERT self-attention
 #
 
 set project_name "noc_mm_sim"
@@ -32,8 +33,22 @@ source ${bd_dir}/bd_with_noc.tcl
 #####################################################
 puts "INFO: Adding simulation testbench..."
 
+# Add parameter file to include path
+# This allows `include "ibert_params.svh" to work
+import_files -fileset sources_1 ${sim_dir}/ibert_params.svh
+import_files -fileset sim_1 ${sim_dir}/ibert_params.svh
+
+# Set include directories for verilog compilation
+set_property include_dirs [list ${sim_dir}] [get_filesets sources_1]
+set_property include_dirs [list ${sim_dir}] [get_filesets sim_1]
+
 # Add testbench to sim_1 fileset
-if {[file exists ${sim_dir}/noc_mm_tb.sv]} {
+# Use noc_attn_proj_tb for attention projection testing
+if {[file exists ${sim_dir}/noc_attn_proj_tb.sv]} {
+    import_files -fileset sim_1 ${sim_dir}/noc_attn_proj_tb.sv
+    set_property top noc_attn_proj_tb [get_filesets sim_1]
+} elseif {[file exists ${sim_dir}/noc_mm_tb.sv]} {
+    # Fallback to original MM testbench
     import_files -fileset sim_1 ${sim_dir}/noc_mm_tb.sv
     set_property top noc_mm_tb [get_filesets sim_1]
 }
@@ -49,11 +64,17 @@ import_files -norecurse [glob ${rtl_dir}/*.sv]
 # Import Verilog files
 import_files -norecurse ${rtl_dir}/axi4_read_dma.v
 import_files -norecurse ${rtl_dir}/axi4_write_dma.v
-import_files -norecurse ${rtl_dir}/noc_mm_control.v
-import_files -norecurse ${rtl_dir}/noc_mm_top.v
+import_files -norecurse ${rtl_dir}/noc_attn_proj_control.v
+import_files -norecurse ${rtl_dir}/noc_attn_proj_top.v
+if {[file exists ${rtl_dir}/noc_mm_control.v]} {
+    import_files -norecurse ${rtl_dir}/noc_mm_control.v
+}
+if {[file exists ${rtl_dir}/noc_mm_top.v]} {
+    import_files -norecurse ${rtl_dir}/noc_mm_top.v
+}
 
-# Import the top-level wrapper that combines BD + RTL
-import_files -norecurse ${rtl_dir}/design_1_wrapper.v
+# Import the top-level wrapper that combines BD + RTL (SystemVerilog for parameter include)
+import_files -norecurse ${rtl_dir}/design_1_wrapper.sv
 
 # Set top module to the wrapper (combines block design and RTL)
 set_property top design_1_wrapper [current_fileset]
@@ -105,8 +126,7 @@ source ${project_dir}/scripts/patch_defparams.tcl
 #####################################################
 puts "INFO: Configuring simulation settings..."
 
-# Set simulation runtime
-set_property -name {xsim.simulate.runtime} -value {50us} -objects [get_filesets sim_1]
+set_property -name {xsim.simulate.runtime} -value {100ms} -objects [get_filesets sim_1]
 
 # Enable waveform
 set_property -name {xsim.simulate.log_all_signals} -value {true} -objects [get_filesets sim_1]

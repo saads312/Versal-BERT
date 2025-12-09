@@ -103,6 +103,11 @@ always @(posedge aclk) begin
         prev_s_axis_tready <= 0;
     end else begin
         prev_s_axis_tready <= s_axis_tready;
+        if (state == IDLE && start) begin
+            total_beats_received <= 0;
+            tlast_seen_flag <= 0;
+            $display("[%t] WRITE_DMA: Resetting debug counters for new transaction", $time);
+        end
 
         // Log tready changes
         if (s_axis_tready != prev_s_axis_tready) begin

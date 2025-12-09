@@ -72,6 +72,8 @@ reg [31:0] axis_beat_count;
 reg [AXI_DATA_WIDTH-1:0] data_buffer;
 reg [7:0] word_index;
 reg buffer_valid;
+reg rlast_received;  // Track if current burst received rlast
+reg [8:0] beats_in_burst;  // Track actual beats received in current burst
 
 // Debug counters
 reg [31:0] total_axi_beats_received = 0;
@@ -99,6 +101,8 @@ always @(posedge aclk) begin
         current_addr <= {AXI_ADDR_WIDTH{1'b0}};
         axis_beat_count <= 32'h0;
         buffer_valid <= 1'b0;
+        rlast_received <= 1'b0;
+        beats_in_burst <= 0;
         total_axi_beats_received <= 0;
         total_axis_beats_sent <= 0;
     end else begin
@@ -108,6 +112,7 @@ always @(posedge aclk) begin
                 error <= 1'b0;
                 m_axis_tvalid <= 1'b0;
                 buffer_valid <= 1'b0;
+                rlast_received <= 1'b0;
                 if (start) begin
                     $display("[%t] READ_DMA: START received! start_addr=0x%h, transfer_length=%d bytes (%d AXIS beats)",
                              $time, start_addr, transfer_length, transfer_length / AXIS_BYTES_PER_BEAT);
@@ -121,20 +126,21 @@ always @(posedge aclk) begin
             end
 
             ISSUE_READ: begin
-                if (!m_axi_arvalid || m_axi_arready) begin
-                    // Calculate burst length
+                if (!m_axi_arvalid) begin
+                    // Calculate burst length and set up AR channel
                     if (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) begin
                         current_burst_len <= MAX_BURST_LEN - 1;
                     end else begin
                         current_burst_len <= (bytes_remaining / AXI_BYTES_PER_BEAT) - 1;
                     end
 
-                    $display("[%t] READ_DMA: Issuing AXI4 AR - araddr=0x%h, arlen=%d beats, bytes_remaining=%d",
-                             $time, current_addr, current_burst_len + 1, bytes_remaining);
+                    $display("[%t] READ_DMA: Issuing AXI4 AR - araddr=0x%h, bytes_remaining=%d",
+                             $time, current_addr, bytes_remaining);
 
                     m_axi_arid <= {AXI_ID_WIDTH{1'b0}};
                     m_axi_araddr <= current_addr;
-                    m_axi_arlen <= current_burst_len;
+                    m_axi_arlen <= (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) ?
+                                   (MAX_BURST_LEN - 1) : ((bytes_remaining / AXI_BYTES_PER_BEAT) - 1);
                     m_axi_arsize <= $clog2(AXI_BYTES_PER_BEAT);
                     m_axi_arburst <= 2'b01;  // INCR
                     m_axi_arlock <= 1'b0;
@@ -143,10 +149,17 @@ always @(posedge aclk) begin
                     m_axi_arqos <= 4'b0000;
                     m_axi_arvalid <= 1'b1;
 
-                    m_axi_rready <= 1'b1;
                     word_index <= 0;
+                    rlast_received <= 1'b0;  // Clear for new burst
+                    beats_in_burst <= 0;     // Reset beat counter for new burst
+                    $display("[%t] READ_DMA: arvalid asserted, waiting for arready", $time);
+                end else if (m_axi_arready) begin
+                    // AR handshake complete
+                    $display("[%t] READ_DMA: AR handshake complete (arlen=%d), transitioning to RECEIVE_DATA",
+                             $time, m_axi_arlen);
+                    m_axi_arvalid <= 1'b0;
+                    m_axi_rready <= 1'b1;
                     state <= RECEIVE_DATA;
-                    $display("[%t] READ_DMA: arvalid asserted, transitioning to RECEIVE_DATA", $time);
                 end
             end
 
@@ -155,8 +168,9 @@ always @(posedge aclk) begin
 
                 if (m_axi_rvalid && m_axi_rready) begin
                     total_axi_beats_received <= total_axi_beats_received + 1;
-                    $display("[%t] READ_DMA: Received AXI beat #%d | rdata=0x%h rlast=%b rresp=%b",
-                             $time, total_axi_beats_received + 1, m_axi_rdata, m_axi_rlast, m_axi_rresp);
+                    beats_in_burst <= beats_in_burst + 1;  // Track actual beats received
+                    $display("[%t] READ_DMA: Received AXI beat #%d (burst beat %d) | rdata=0x%h rlast=%b rresp=%b",
+                             $time, total_axi_beats_received + 1, beats_in_burst + 1, m_axi_rdata, m_axi_rlast, m_axi_rresp);
 
                     data_buffer <= m_axi_rdata;
                     buffer_valid <= 1'b1;
@@ -167,14 +181,20 @@ always @(posedge aclk) begin
                         error <= 1'b1;
                         state <= DONE_STATE;
                     end else begin
+                        // Deassert rready while streaming to avoid missing data
+                        m_axi_rready <= 1'b0;
                         state <= STREAM_DATA;
                     end
 
                     if (m_axi_rlast) begin
-                        $display("[%t] READ_DMA: RLAST received, burst complete", $time);
+                        // Use actual beats received (beats_in_burst + 1), not requested burst length
+                        $display("[%t] READ_DMA: RLAST received after %d beats (requested %d), burst complete",
+                                 $time, beats_in_burst + 1, current_burst_len + 1);
                         m_axi_rready <= 1'b0;
-                        current_addr <= current_addr + ((current_burst_len + 1) * AXI_BYTES_PER_BEAT);
-                        bytes_remaining <= bytes_remaining - ((current_burst_len + 1) * AXI_BYTES_PER_BEAT);
+                        rlast_received <= 1'b1;  // Mark burst as complete
+                        // Update address and remaining bytes based on ACTUAL beats received
+                        current_addr <= current_addr + ((beats_in_burst + 1) * AXI_BYTES_PER_BEAT);
+                        bytes_remaining <= bytes_remaining - ((beats_in_burst + 1) * AXI_BYTES_PER_BEAT);
                     end
                 end
             end
@@ -203,16 +223,23 @@ always @(posedge aclk) begin
                                 m_axis_tvalid <= 1'b0;
                             end
 
-                            if (bytes_remaining > 0) begin
-                                $display("[%t] READ_DMA: More data needed (%d bytes), back to RECEIVE_DATA", $time, bytes_remaining);
-                                m_axi_rready <= 1'b1;
-                                state <= RECEIVE_DATA;
-                            end else if (axis_beat_count == total_axis_beats - 1) begin
+                            if (axis_beat_count == total_axis_beats - 1) begin
                                 $display("[%t] READ_DMA: All beats sent, transitioning to DONE", $time);
                                 state <= DONE_STATE;
+                            end else if (rlast_received) begin
+                                // Current burst is done, need new burst
+                                if (bytes_remaining > 0) begin
+                                    $display("[%t] READ_DMA: Burst done, more data needed (%d bytes), issuing new burst", $time, bytes_remaining);
+                                    state <= ISSUE_READ;
+                                end else begin
+                                    $display("[%t] READ_DMA: Burst done, no bytes remaining, to DONE", $time);
+                                    state <= DONE_STATE;
+                                end
                             end else begin
-                                $display("[%t] READ_DMA: Need more bursts, back to ISSUE_READ", $time);
-                                state <= ISSUE_READ;
+                                // More data expected from current burst
+                                $display("[%t] READ_DMA: Waiting for more data from current burst", $time);
+                                m_axi_rready <= 1'b1;
+                                state <= RECEIVE_DATA;
                             end
                         end
                     end
