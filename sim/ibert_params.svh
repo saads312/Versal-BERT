@@ -87,4 +87,22 @@ parameter [7:0]  REQUANT_E = 8'd8;           // Shift amount
 // Timeout in clock cycles for waiting on operations
 parameter TIMEOUT_CYCLES = 1000000;
 
+// ============================================================================
+// Intermediate Layer Parameters
+// ============================================================================
+parameter INPUT_SIZE = 32;          // Input size (rows of A~)
+parameter HIDDEN_SIZE = 768;        // Hidden size (cols of A~, rows of K'^T)
+parameter EXP_SIZE = 3072;          // Expansion size (cols of K'^T)
+
+// Addresses (aligned to 4KB for safety)
+parameter [63:0] ADDR_A = 64'h0000_0000_8000_0000;
+parameter [63:0] ADDR_K = 64'h0000_0000_8010_0000;
+parameter [63:0] ADDR_G = 64'h0000_0000_8040_0000;
+
+// Requantization defaults
+parameter [31:0] REQUANT_M_MULT = 32'd1000; 
+parameter [7:0]  REQUANT_E_MULT = 8'd10;
+parameter [31:0] REQUANT_M_G    = 32'd1000;
+parameter [7:0]  REQUANT_E_G    = 8'd10;
+
 `endif // IBERT_PARAMS_SVH

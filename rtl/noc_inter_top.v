@@ -14,7 +14,7 @@ module noc_inter_top #(
     // Matrix dimensions
     parameter INPUT_SIZE = 32,          // Input size (rows of A~)
     parameter HIDDEN_SIZE = 768,        // Hidden size (cols of A~, rows of K'^T)
-    parameter EXP_SIZE = 3072,          // Per-head dimension (cols of K'^T)
+    parameter EXP_SIZE = 3072,          // Expansion size (cols of K'^T)
 
     // Data widths
     parameter D_W = 8,                  // Data width (8-bit quantized)
