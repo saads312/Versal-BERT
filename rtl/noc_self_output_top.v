@@ -689,10 +689,9 @@ mm #(
 .P_B(1),
 .TRANSPOSE_B(0)
 ) mm_inst (
-.mm_clk(clk),
-.mm_fclk(clk),
-.mm_rst_n(rstn),
-
+  .mm_clk(clk),
+  .mm_fclk(clk),
+  .mm_rst_n(rstn),
 
   // Input A (attention output)
   .s_axis_s2mm_tdata_A(axis_attn_tdata),
@@ -733,9 +732,8 @@ requant #(
 .OUT_BITS(D_W_ACC),                 // Keep 32-bit output
 .CLIP(0)                            // No clipping
 ) requant_mm (
-.clk(clk),
-.rst(~rstn),
-
+  .clk(clk),
+  .rst(~rstn),
 
   // Input from MM
   .in_tdata(axis_mm_out_tdata),
@@ -780,9 +778,8 @@ requant #(
 .OUT_BITS(D_W_ACC),                 // Output is 32-bit
 .CLIP(0)                            // No clipping
 ) requant_res (
-.clk(clk),
-.rst(~rstn),
-
+  .clk(clk),
+  .rst(~rstn),
 
   // Input residual (8-bit)
   .in_tdata({{(D_W_ACC-D_W){axis_residual_tdata[D_W-1]}}, axis_residual_tdata}),  // Sign extend
@@ -825,9 +822,8 @@ mat_add #(
 .D_W(D_W_ACC),                      // 32-bit inputs
 .OUT_BITS(22)                       // 22-bit output (LN_BITS)
 ) mat_add_inst (
-.clk(clk),
-.rst(~rstn),
-
+  .clk(clk),
+  .rst(~rstn),
 
   // Input R (residual, requantized to 32-bit)
   .in_tdata_R(axis_requant_res_tdata),
@@ -847,7 +843,6 @@ mat_add #(
   .out_tready_Z(axis_matadd_tready),
   .out_tlast_Z(axis_matadd_tlast)
 
-
 );
 
 //============================================================================
@@ -861,9 +856,8 @@ layer_norm_top #(
 .LN_BITS(22),
 .MATRIXSIZE_W(MATRIXSIZE_W)
 ) layer_norm_inst (
-.clk(clk),
-.rst(~rstn),
-
+  .clk(clk),
+  .rst(~rstn),
 
   // Bias input (constant = 0 for now, or add DMA later)
   .s_axis_s2mm_tdata_bias({32{1'b0}}),
@@ -899,9 +893,8 @@ requant #(
 .OUT_BITS(D_W),                     // 8-bit output
 .CLIP(1)                            // Enable clipping
 ) requant_out (
-.clk(clk),
-.rst(~rstn),
-
+  .clk(clk),
+  .rst(~rstn),
 
   // Input from layer norm (32-bit)
   .in_tdata(axis_layernorm_tdata),
@@ -976,9 +969,8 @@ axi4_write_dma #(
 .AXIS_DATA_WIDTH(D_W),
 .MAX_BURST_LEN(256)
 ) dma_write_output (
-.aclk(clk),
-.aresetn(rstn),
-
+  .aclk(clk),
+  .aresetn(rstn),
 
   .start_addr(addr_output),
   .transfer_length(size_output),
