@@ -52,7 +52,7 @@ module noc_inter_top #(
     input wire [D_W_ACC-1:0] requant_m_mult,
     input wire [D_W-1:0]     requant_e_mult,
     input wire [D_W_ACC-1:0] requant_m_G,
-    input wire [D_W-1:0]     requant_e_G,
+    input wire [D_W-1:0]     requant_e_G
 );
 
 // Internal clocks

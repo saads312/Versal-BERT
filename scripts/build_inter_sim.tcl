@@ -41,9 +41,16 @@ import_files -fileset sim_1 ${sim_dir}/ibert_params.svh
 set_property include_dirs [list ${sim_dir}] [get_filesets sources_1]
 set_property include_dirs [list ${sim_dir}] [get_filesets sim_1]
 
-# Import Testbench
-import_files -fileset sim_1 ${sim_dir}/noc_inter_tb.sv
-set_property top noc_inter_tb [get_filesets sim_1]
+# Add testbench to sim_1 fileset
+# Use noc_inter_tb for intermediate block testing
+if {[file exists ${sim_dir}/noc_inter_tb.sv]} {
+    import_files -fileset sim_1 ${sim_dir}/noc_inter_tb.sv
+    set_property top noc_inter_tb [get_filesets sim_1]
+} elseif {[file exists ${sim_dir}/noc_mm_tb.sv]} {
+    # Fallback to original MM testbench
+    import_files -fileset sim_1 ${sim_dir}/noc_mm_tb.sv
+    set_property top noc_mm_tb [get_filesets sim_1]
+}
 
 #####################################################
 # Add RTL sources with XPM NMUs
@@ -51,13 +58,20 @@ set_property top noc_inter_tb [get_filesets sim_1]
 puts "INFO: Adding RTL sources with XPM NoC instances..."
 
 # Import all RTL files including SystemVerilog modules
+import_files -norecurse [glob ${rtl_dir}/*.v]
 import_files -norecurse [glob ${rtl_dir}/*.sv]
 
-# Import Verilog files
-import_files -norecurse ${rtl_dir}/axi4_read_dma.v
-import_files -norecurse ${rtl_dir}/axi4_write_dma.v
-import_files -norecurse ${rtl_dir}/noc_inter_control.v
-import_files -norecurse ${rtl_dir}/noc_inter_top.v
+# # Import Verilog files
+# import_files -norecurse ${rtl_dir}/axi4_read_dma.v
+# import_files -norecurse ${rtl_dir}/axi4_write_dma.v
+# import_files -norecurse ${rtl_dir}/noc_inter_control.v
+# import_files -norecurse ${rtl_dir}/noc_inter_top.v
+# if {[file exists ${rtl_dir}/noc_mm_control.v]} {
+#     import_files -norecurse ${rtl_dir}/noc_mm_control.v
+# }
+# if {[file exists ${rtl_dir}/noc_mm_top.v]} {
+#     import_files -norecurse ${rtl_dir}/noc_mm_top.v
+# }
 
 # Import the top-level wrapper that combines BD + RTL (SystemVerilog for parameter include)
 import_files -norecurse ${rtl_dir}/design_1_wrapper_inter.sv
@@ -82,7 +96,7 @@ update_compile_order -fileset sources_1
 # CRITICAL: In simulation-only flow, XDC doesn't run, must source as TCL
 #####################################################
 puts "INFO: Sourcing NoC constraints TCL commands..."
-source ${xdc_dir}/noc_constraints_sim.xdc
+source ${xdc_dir}/noc_constraints_inter_sim.xdc
 
 #####################################################
 # Validate NoC - will use connections created above
@@ -96,7 +110,7 @@ validate_noc
 # validate_noc doesn't populate XPM_NMU routing in simulation-only flow
 #####################################################
 puts "INFO: Patching defparams.vh with NoC routing configuration..."
-source ${project_dir}/scripts/patch_defparams.tcl
+source ${project_dir}/scripts/patch_defparams_inter.tcl
 
 #####################################################
 # Simulation Settings
