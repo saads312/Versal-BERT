@@ -84,6 +84,17 @@ reg tlast_received = 0;
 // Data width conversion buffer
 reg [AXI_DATA_WIDTH-1:0] data_buffer;
 reg [7:0] word_index;
+reg [7:0] valid_words;  // Number of valid words in buffer when TLAST received
+
+// Track if we're in the middle of a multi-beat burst
+reg mid_burst;
+
+// Combinational burst length calculation (to avoid 1-cycle delay issue)
+wire [7:0] calc_burst_len;
+assign calc_burst_len = tlast_received ? 8'h0 :
+                        (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) ? (MAX_BURST_LEN - 1) :
+                        (bytes_remaining >= AXI_BYTES_PER_BEAT) ? ((bytes_remaining / AXI_BYTES_PER_BEAT) - 1) :
+                        8'h0;
 
 // State change logging
 always @(posedge aclk) begin
@@ -152,6 +163,11 @@ always @(posedge aclk) begin
         bytes_remaining <= 32'h0;
         current_addr <= {AXI_ADDR_WIDTH{1'b0}};
         word_index <= 8'h0;
+        valid_words <= 8'h0;
+        mid_burst <= 1'b0;
+        current_burst_len <= 8'h0;
+        beats_in_burst <= 8'h0;
+        beat_count <= 8'h0;
     end else begin
         case (state)
             IDLE: begin
@@ -159,12 +175,14 @@ always @(posedge aclk) begin
                 error <= 1'b0;
                 m_axi_wvalid <= 1'b0;
                 tlast_received <= 1'b0;
+                mid_burst <= 1'b0;
                 if (start) begin
                     current_addr <= start_addr;
                     bytes_remaining <= transfer_length;
                     word_index <= 0;
                     s_axis_tready <= 1'b1;
                     tlast_received <= 1'b0;
+                    mid_burst <= 1'b0;
                     state <= BUFFER_DATA;
                     $display("[%t] WRITE_DMA: Starting new transaction (addr=0x%h, len=%d bytes)",
                              $time, start_addr, transfer_length);
@@ -179,34 +197,51 @@ always @(posedge aclk) begin
                     // Track TLAST reception
                     if (s_axis_tlast) begin
                         tlast_received <= 1'b1;
+                        valid_words <= word_index + 1;  // Save count of valid words
                         $display("[%t] WRITE_DMA: TLAST detected while buffering (word_index=%d)",
                                  $time, word_index);
-                    end
-
-                    if (word_index == WORDS_PER_AXI_BEAT - 1) begin
+                        // TLAST received - flush partial buffer immediately
                         s_axis_tready <= 1'b0;
-                        state <= ISSUE_WRITE_ADDR;
-                        $display("[%t] WRITE_DMA: Buffer full, transitioning to ISSUE_WRITE_ADDR (tlast_received=%b)",
-                                 $time, tlast_received || s_axis_tlast);
+                        // If mid-burst, go directly to WRITE_DATA, else issue new address
+                        if (mid_burst) begin
+                            state <= WRITE_DATA;
+                            $display("[%t] WRITE_DMA: TLAST mid-burst - flushing partial buffer (%d words), to WRITE_DATA",
+                                     $time, word_index + 1);
+                        end else begin
+                            state <= ISSUE_WRITE_ADDR;
+                            $display("[%t] WRITE_DMA: TLAST - flushing partial buffer (%d words), to ISSUE_WRITE_ADDR",
+                                     $time, word_index + 1);
+                        end
+                    end else if (word_index == WORDS_PER_AXI_BEAT - 1) begin
+                        s_axis_tready <= 1'b0;
+                        valid_words <= WORDS_PER_AXI_BEAT;  // Full buffer
+                        // If mid-burst, go directly to WRITE_DATA to continue the burst
+                        // Otherwise, issue a new write address
+                        if (mid_burst) begin
+                            state <= WRITE_DATA;
+                            $display("[%t] WRITE_DMA: Buffer full mid-burst, to WRITE_DATA (beat_count=%d/%d)",
+                                     $time, beat_count, beats_in_burst);
+                        end else begin
+                            state <= ISSUE_WRITE_ADDR;
+                            $display("[%t] WRITE_DMA: Buffer full, to ISSUE_WRITE_ADDR (tlast_received=%b)",
+                                     $time, tlast_received);
+                        end
                     end
                 end
             end
 
             ISSUE_WRITE_ADDR: begin
-                if (!m_axi_awvalid || m_axi_awready) begin
-                    // Calculate burst length
-                    if (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) begin
-                        current_burst_len <= MAX_BURST_LEN - 1;
-                    end else begin
-                        current_burst_len <= (bytes_remaining / AXI_BYTES_PER_BEAT) - 1;
-                    end
+                if (!m_axi_awvalid) begin
+                    // First time - set up the address channel
+                    // Use combinational calc_burst_len to avoid 1-cycle delay
+                    current_burst_len <= calc_burst_len;
 
                     $display("[%t] WRITE_DMA: Issuing write addr=0x%h, len=%d beats, bytes_remaining=%d",
-                             $time, current_addr, current_burst_len + 1, bytes_remaining);
+                             $time, current_addr, calc_burst_len + 1, bytes_remaining);
 
                     m_axi_awid <= {AXI_ID_WIDTH{1'b0}};
                     m_axi_awaddr <= current_addr;
-                    m_axi_awlen <= current_burst_len;
+                    m_axi_awlen <= calc_burst_len;  // Use combinational value
                     m_axi_awsize <= $clog2(AXI_BYTES_PER_BEAT);
                     m_axi_awburst <= 2'b01;  // INCR
                     m_axi_awlock <= 1'b0;
@@ -216,42 +251,70 @@ always @(posedge aclk) begin
                     m_axi_awvalid <= 1'b1;
 
                     beat_count <= 0;
-                    beats_in_burst <= current_burst_len + 1;
+                    beats_in_burst <= calc_burst_len + 1;  // Use combinational value
+                end else if (m_axi_awready) begin
+                    // Address accepted - can proceed to data phase
+                    $display("[%t] WRITE_DMA: Write address accepted, proceeding to WRITE_DATA", $time);
+                    m_axi_awvalid <= 1'b0;
+                    mid_burst <= 1'b1;  // We're now in the middle of a burst
                     state <= WRITE_DATA;
                 end
             end
 
             WRITE_DATA: begin
-                m_axi_awvalid <= 1'b0;
-
-                if (!m_axi_wvalid || m_axi_wready) begin
-                    // Check if this is the last beat (either end of burst OR tlast received)
+                if (!m_axi_wvalid) begin
+                    // First time in state - set up write data channel
                     m_axi_wdata <= data_buffer;
-                    m_axi_wstrb <= {(AXI_DATA_WIDTH/8){1'b1}};
-                    m_axi_wlast <= (beat_count == beats_in_burst - 1) || tlast_received;
+                    // Generate write strobe based on valid_words (each word is AXIS_BYTES_PER_BEAT bytes)
+                    if (tlast_received) begin
+                        // Partial buffer - only strobe valid bytes
+                        m_axi_wstrb <= ((1 << (valid_words * AXIS_BYTES_PER_BEAT)) - 1);
+                    end else begin
+                        m_axi_wstrb <= {(AXI_DATA_WIDTH/8){1'b1}};
+                    end
+                    m_axi_wlast <= (beat_count == beats_in_burst - 1);
                     m_axi_wvalid <= 1'b1;
 
-                    $display("[%t] WRITE_DMA: Writing AXI beat %d/%d (wdata=0x%h, wlast=%b, tlast_received=%b)",
+                    $display("[%t] WRITE_DMA: Writing AXI beat %d/%d (wdata=0x%h, wlast=%b, tlast_received=%b, valid_words=%d)",
                              $time, beat_count + 1, beats_in_burst, data_buffer,
-                             ((beat_count == beats_in_burst - 1) || tlast_received), tlast_received);
-
+                             (beat_count == beats_in_burst - 1), tlast_received, valid_words);
+                end else if (m_axi_wready) begin
+                    // Write handshake complete
+                    m_axi_wvalid <= 1'b0;
                     beat_count <= beat_count + 1;
 
-                    if ((beat_count == beats_in_burst - 1) || tlast_received) begin
-                        $display("[%t] WRITE_DMA: Last beat in burst (beat_count=%d, tlast_received=%b), transitioning to WAIT_BRESP",
+                    if (beat_count == beats_in_burst - 1) begin
+                        // Burst complete - all promised beats sent
+                        $display("[%t] WRITE_DMA: Last beat accepted (beat_count=%d, tlast_received=%b), transitioning to WAIT_BRESP",
                                  $time, beat_count, tlast_received);
-                        m_axi_wvalid <= 1'b0;
                         m_axi_bready <= 1'b1;
-                        // Update address and bytes based on actual beats written
-                        current_addr <= current_addr + ((beat_count + 1) * AXI_BYTES_PER_BEAT);
-                        bytes_remaining <= bytes_remaining - ((beat_count + 1) * AXI_BYTES_PER_BEAT);
+                        // Update address and bytes based on actual bytes written
+                        if (tlast_received) begin
+                            // TLAST was received - we're done with data from source
+                            // Note: some beats may have been padding (wstrb=0)
+                            bytes_remaining <= 0;
+                        end else begin
+                            current_addr <= current_addr + ((beat_count + 1) * AXI_BYTES_PER_BEAT);
+                            bytes_remaining <= bytes_remaining - ((beat_count + 1) * AXI_BYTES_PER_BEAT);
+                        end
                         state <= WAIT_BRESP;
                     end else begin
-                        $display("[%t] WRITE_DMA: More beats in burst, back to BUFFER_DATA", $time);
-                        // Get next data from stream
+                        // More beats needed in this burst
                         word_index <= 0;
-                        s_axis_tready <= 1'b1;
-                        state <= BUFFER_DATA;
+                        if (tlast_received) begin
+                            // Source finished early - pad remaining beats with zero strobe
+                            // We must complete the promised burst length per AXI protocol
+                            data_buffer <= {AXI_DATA_WIDTH{1'b0}};
+                            valid_words <= 0;  // Will result in wstrb = 0 (no byte enables)
+                            // Stay in WRITE_DATA to send padding beat
+                            $display("[%t] WRITE_DMA: Padding beat %d/%d (source sent TLAST, padding with wstrb=0)",
+                                     $time, beat_count + 1, beats_in_burst);
+                        end else begin
+                            $display("[%t] WRITE_DMA: Beat accepted, more beats in burst, back to BUFFER_DATA", $time);
+                            // Get next data from stream
+                            s_axis_tready <= 1'b1;
+                            state <= BUFFER_DATA;
+                        end
                     end
                 end
             end
@@ -261,6 +324,7 @@ always @(posedge aclk) begin
                     $display("[%t] WRITE_DMA: BRESP received (resp=%b, bytes_remaining=%d, tlast_received=%b)",
                              $time, m_axi_bresp, bytes_remaining, tlast_received);
                     m_axi_bready <= 1'b0;
+                    mid_burst <= 1'b0;  // Burst complete
 
                     if (m_axi_bresp != 2'b00) begin
                         $display("[%t] WRITE_DMA: ERROR response, transitioning to DONE", $time);

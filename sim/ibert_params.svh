@@ -12,14 +12,14 @@
 // ============================================================================
 
 // Sequence length (number of tokens)
-parameter TOKENS = 4;       // Full IBERT: 32
-
+parameter TOKENS = 32;       // Full IBERT: 32
+// set it to 2 to get it done in 12.354
 // Embedding dimension (hidden size)
 parameter EMBED = 64;       // Full IBERT: 768
-
+// set it to 16 to get it done in 12.354
 // Number of attention heads
-parameter NUM_HEADS = 4;    // Full IBERT: 12 → HEAD_DIM = 16
-
+parameter NUM_HEADS = 12;    // Full IBERT: 12 → HEAD_DIM = 16
+// set it to 4 to get it done in 12.354
 // ============================================================================
 // Derived Parameters (from matrix multiply constraints)
 // ============================================================================
@@ -57,6 +57,15 @@ parameter SIZE_OUT_32B_BYTES = TOKENS * HEAD_DIM * 4; // 32×64×4 = 8KB
 // Output Q'/K'/V' (after requant): TOKENS × HEAD_DIM elements, 8-bit each
 parameter SIZE_OUT_8B_BYTES = TOKENS * HEAD_DIM;      // 32×64 = 2KB
 
+// Attention scores S: TOKENS × TOKENS elements, 32-bit each
+parameter SIZE_S_BYTES = TOKENS * TOKENS * 4;         // 32×32×4 = 4KB
+
+// Softmax output P: TOKENS × TOKENS elements, 8-bit each
+parameter SIZE_P_BYTES = TOKENS * TOKENS;             // 32×32 = 1KB
+
+// Context output C': TOKENS × HEAD_DIM elements, 8-bit each
+parameter SIZE_C_PRIME_BYTES = TOKENS * HEAD_DIM;     // 32×64 = 2KB
+
 // ============================================================================
 // DDR Address Map
 // ============================================================================
@@ -73,12 +82,28 @@ parameter [63:0] ADDR_Q_PRIME  = DDR_BASE + 64'h0004_0000;  // Output Q' (+256KB
 parameter [63:0] ADDR_K_PRIME_T= DDR_BASE + 64'h0004_1000;  // Output K'^T
 parameter [63:0] ADDR_V_PRIME  = DDR_BASE + 64'h0004_2000;  // Output V'
 
+// Self-attention intermediate results
+parameter [63:0] ADDR_S        = DDR_BASE + 64'h0005_0000;  // Attention scores S (TOKENS×TOKENS×4)
+parameter [63:0] ADDR_P        = DDR_BASE + 64'h0005_1000;  // Softmax output P (TOKENS×TOKENS)
+parameter [63:0] ADDR_C_PRIME  = DDR_BASE + 64'h0005_2000;  // Context output C' (TOKENS×HEAD_DIM)
+
 // ============================================================================
 // Requantization Parameters
 // ============================================================================
 
 parameter [31:0] REQUANT_M = 32'h0000_0100;  // Scale multiplier
 parameter [7:0]  REQUANT_E = 8'd8;           // Shift amount
+
+// ============================================================================
+// Softmax Coefficients (fixed-point, FP_BITS=30)
+// These are typical values for quantized softmax in IBERT
+// ============================================================================
+
+parameter signed [31:0] SOFTMAX_QB      = 32'sd1073741824;  // ~1.0 in FP30
+parameter signed [31:0] SOFTMAX_QC      = 32'sd536870912;   // ~0.5 in FP30
+parameter signed [31:0] SOFTMAX_QLN2    = 32'sd744261118;   // ln(2) in FP30
+parameter signed [31:0] SOFTMAX_QLN2_INV= 32'sd1549082005;  // 1/ln(2) in FP30
+parameter        [31:0] SOFTMAX_SREQ    = 32'd1073741824;   // Softmax requant scale
 
 // ============================================================================
 // Simulation Control

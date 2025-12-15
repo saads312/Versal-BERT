@@ -128,10 +128,14 @@ always @(posedge aclk) begin
             ISSUE_READ: begin
                 if (!m_axi_arvalid) begin
                     // Calculate burst length and set up AR channel
+                    // Guard against underflow when bytes_remaining < AXI_BYTES_PER_BEAT
                     if (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) begin
                         current_burst_len <= MAX_BURST_LEN - 1;
-                    end else begin
+                    end else if (bytes_remaining >= AXI_BYTES_PER_BEAT) begin
                         current_burst_len <= (bytes_remaining / AXI_BYTES_PER_BEAT) - 1;
+                    end else begin
+                        // Less than one AXI beat - single beat transfer
+                        current_burst_len <= 8'h0;
                     end
 
                     $display("[%t] READ_DMA: Issuing AXI4 AR - araddr=0x%h, bytes_remaining=%d",
@@ -140,7 +144,9 @@ always @(posedge aclk) begin
                     m_axi_arid <= {AXI_ID_WIDTH{1'b0}};
                     m_axi_araddr <= current_addr;
                     m_axi_arlen <= (bytes_remaining >= (MAX_BURST_LEN * AXI_BYTES_PER_BEAT)) ?
-                                   (MAX_BURST_LEN - 1) : ((bytes_remaining / AXI_BYTES_PER_BEAT) - 1);
+                                   (MAX_BURST_LEN - 1) :
+                                   ((bytes_remaining >= AXI_BYTES_PER_BEAT) ?
+                                    ((bytes_remaining / AXI_BYTES_PER_BEAT) - 1) : 8'h0);
                     m_axi_arsize <= $clog2(AXI_BYTES_PER_BEAT);
                     m_axi_arburst <= 2'b01;  // INCR
                     m_axi_arlock <= 1'b0;
@@ -215,18 +221,17 @@ always @(posedge aclk) begin
                         axis_beat_count <= axis_beat_count + 1;
                         word_index <= word_index + 1;
 
-                        if (word_index == WORDS_PER_AXI_BEAT - 1) begin
+                        // Check if all beats are sent - this takes priority over buffer boundary
+                        if (axis_beat_count == total_axis_beats - 1) begin
+                            $display("[%t] READ_DMA: All beats sent (axis_beat_count=%d), transitioning to DONE", $time, axis_beat_count);
                             buffer_valid <= 1'b0;
-                            // Don't deassert tvalid if this is the last beat - need to keep it high
-                            // for the tlast handshake to complete properly
-                            if (axis_beat_count != total_axis_beats - 1) begin
-                                m_axis_tvalid <= 1'b0;
-                            end
+                            state <= DONE_STATE;
+                        end else if (word_index == WORDS_PER_AXI_BEAT - 1) begin
+                            // Buffer exhausted but more beats needed
+                            buffer_valid <= 1'b0;
+                            m_axis_tvalid <= 1'b0;
 
-                            if (axis_beat_count == total_axis_beats - 1) begin
-                                $display("[%t] READ_DMA: All beats sent, transitioning to DONE", $time);
-                                state <= DONE_STATE;
-                            end else if (rlast_received) begin
+                            if (rlast_received) begin
                                 // Current burst is done, need new burst
                                 if (bytes_remaining > 0) begin
                                     $display("[%t] READ_DMA: Burst done, more data needed (%d bytes), issuing new burst", $time, bytes_remaining);
