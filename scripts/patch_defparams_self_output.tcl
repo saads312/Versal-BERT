@@ -28,91 +28,107 @@ set addr_mask "7FFFFFFF"
 
 # Patch xpm_nmu_attn_read (Read Attention Output from DDR)
 puts "INFO: Patching xpm_nmu_attn_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
-    content
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
-    content
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
-    content
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
-    content
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
 
 # Patch xpm_nmu_weight_read (Read W_self_output from DDR)
 puts "INFO: Patching xpm_nmu_weight_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
-    content
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
-    content
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
-    content
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
-    content
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
 
 # Patch xpm_nmu_residual_read (Read Residual from DDR)
 puts "INFO: Patching xpm_nmu_residual_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
-    content
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
-    content
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
-    content
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
-    content
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
 
 # Patch xpm_nmu_output_write (Write final output to DDR)
 puts "INFO: Patching xpm_nmu_output_write routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
-    content
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
-    content
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
-    content
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
     $content \
     "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
-    content
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
 
 # Write the patched content back
 puts "INFO: Writing patched defparams.vh..."
