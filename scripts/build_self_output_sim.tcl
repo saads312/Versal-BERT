@@ -50,32 +50,14 @@ set_property top noc_self_output_tb [get_filesets sim_1]
 #####################################################
 puts "INFO: Adding RTL sources with XPM NoC instances..."
 
-# Import DMA modules
+# Import ALL SystemVerilog files (includes all dependencies)
+import_files -norecurse [glob ${rtl_dir}/*.sv]
+
+# Import specific Verilog files
 import_files -norecurse ${rtl_dir}/axi4_read_dma.v
 import_files -norecurse ${rtl_dir}/axi4_write_dma.v
-
-# Import control FSM
 import_files -norecurse ${rtl_dir}/noc_self_output_control.v
-
-# Import compute pipeline modules
-import_files -norecurse ${rtl_dir}/mm.v
-import_files -norecurse ${rtl_dir}/requant.v
-import_files -norecurse ${rtl_dir}/mat_add.v
-import_files -norecurse ${rtl_dir}/layer_norm_top.v
-
-# Import any dependencies (if they exist as separate files)
-# Uncomment and adjust paths as needed:
-# import_files -norecurse ${rtl_dir}/pe.v
-# import_files -norecurse ${rtl_dir}/fifo.v
-# import_files -norecurse ${rtl_dir}/layer_norm.v
-# import_files -norecurse ${rtl_dir}/div_sqrt_early_termination.v
-# import_files -norecurse ${rtl_dir}/invsqrt.v
-
-# Import the NoC self-output top module
 import_files -norecurse ${rtl_dir}/noc_self_output_top.v
-
-# Import the top-level wrapper that combines BD + RTL (SystemVerilog for parameter include)
-import_files -norecurse ${rtl_dir}/design_1_wrapper_self_output.sv
 
 # Set top module to the wrapper (combines block design and RTL)
 set_property top design_1_wrapper_self_output [current_fileset]
@@ -127,6 +109,15 @@ set_property -name {xsim.simulate.log_all_signals} -value {true} -objects [get_f
 # Update compile order again after validate_noc
 #####################################################
 update_compile_order -fileset sources_1
+update_compile_order -fileset sim_1
+
+# Prevent Vivado from automatically setting the wrapper as top
+set_property sim_wrapper_top false [get_filesets sim_1]
+
+# Explicitly set your testbench as top
+set_property top noc_self_output_tb [get_filesets sim_1]
+
+# Update compile order to ensure the change takes effect
 update_compile_order -fileset sim_1
 
 #####################################################
