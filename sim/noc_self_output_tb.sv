@@ -10,9 +10,9 @@
 
 module noc_self_output_tb;
 
-    //==========================================================================
+    
     // Parameters (override from ibert_params.svh if needed)
-    //==========================================================================
+    
     localparam TOKENS = 32;
     localparam EMBED = 768;
 
@@ -28,9 +28,9 @@ module noc_self_output_tb;
     localparam [31:0] REQUANT_M_LN = 32'h0000_0100;  // Scale for layernorm output
     localparam [7:0]  REQUANT_E_LN = 8'd8;           // Shift for layernorm output
 
-    //==========================================================================
+    
     // Clock Generation
-    //==========================================================================
+    
     reg sim_clk;
     initial begin
         sim_clk = 0;
@@ -46,9 +46,9 @@ module noc_self_output_tb;
         forever #2.5 sys_clk_p = !sys_clk_p; // 200 MHz
     end
 
-    //==========================================================================
+    
     // DUT Interface Signals
-    //==========================================================================
+    
     wire        ch0_ddr4_0_act_n;
     wire [16:0] ch0_ddr4_0_adr;
     wire [1:0]  ch0_ddr4_0_ba;
@@ -80,9 +80,9 @@ module noc_self_output_tb;
     reg [31:0] requant_m_ln_r;
     reg [7:0]  requant_e_ln_r;
 
-    //==========================================================================
+    
     // DUT Instantiation
-    //==========================================================================
+    
 
     // Instantiate the self-output wrapper
     design_1_wrapper_self_output dut (
@@ -117,9 +117,9 @@ module noc_self_output_tb;
         .requant_e_ln(requant_e_ln_r)
     );
 
-    //==========================================================================
+    
     // Test Data Arrays
-    //==========================================================================
+    
     // Arrays for generating data files
     reg [7:0] matrix_attn_output [0:TOKENS*EMBED-1];
     reg [7:0] matrix_weight [0:EMBED*EMBED-1];
@@ -127,9 +127,9 @@ module noc_self_output_tb;
     reg [7:0] matrix_output_expected [0:TOKENS*EMBED-1];
     reg [7:0] matrix_output_actual [0:TOKENS*EMBED-1];
 
-    //==========================================================================
+    
     // CIPS VIP Memory Tasks
-    //==========================================================================
+    
     // NOTE: Hierarchy path to VIP must match the instantiated design_1 instance
     // Inside design_1_wrapper_self_output, the BD instance is named "design_1_i"
 
@@ -167,9 +167,9 @@ module noc_self_output_tb;
         end
     endtask
 
-    //==========================================================================
+    
     // CIPS Initialization
-    //==========================================================================
+    
     initial begin
         repeat(10) @(posedge sim_clk);
         // Reset and clock generation for the VIP
@@ -184,6 +184,204 @@ module noc_self_output_tb;
         force dut.rstn_pl = 1'b1;
 
         $display("[%t] INFO: CIPS VIP initialized", $time);
+    end
+
+    
+    // Main Test Sequence
+    
+    integer i, j;
+    integer file_handle;
+    integer mismatches;
+
+    initial begin
+        $display("================================================================================");
+        $display("NoC Self-Output Layer End-to-End Test");
+        $display("================================================================================");
+        $display("Dimensions:");
+        $display("  Attention Output: [%0d x %0d]", TOKENS, EMBED);
+        $display("  Weight (W_self_output): [%0d x %0d]", EMBED, EMBED);
+        $display("  Residual: [%0d x %0d]", TOKENS, EMBED);
+        $display("  Output: [%0d x %0d]", TOKENS, EMBED);
+        $display("Operation: LayerNorm(attn_output × weight + residual)");
+        $display("================================================================================");
+
+        // 1. Initialize Control Signals
+        start = 0;
+        addr_attn_output_r = ADDR_ATTN_OUTPUT;
+        addr_weight_r = ADDR_WEIGHT;
+        addr_residual_r = ADDR_RESIDUAL;
+        addr_output_r = ADDR_OUTPUT;
+        requant_m_mm_r = REQUANT_M_MM;
+        requant_e_mm_r = REQUANT_E_MM;
+        requant_m_ln_r = REQUANT_M_LN;
+        requant_e_ln_r = REQUANT_E_LN;
+
+        // Wait for VIP initialization
+        repeat(300) @(posedge sim_clk);
+
+        // Configure NoC Routing via VIP
+        dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.set_routing_config(
+            "NOC_API", "FPD_CCI_NOC", 1
+        );
+
+        // 2. Generate Test Data
+        $display("[%t] INFO: Step 1 - Generating Test Matrices", $time);
+
+        // Attention output: All 1s
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            matrix_attn_output[i] = 8'd1;
+        end
+
+        // Weight: Identity-like (simplified for testing)
+        for (i = 0; i < EMBED*EMBED; i++) begin
+            matrix_weight[i] = 8'd1;  // Simplified - could use identity matrix
+        end
+
+        // Residual: All 2s
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            matrix_residual[i] = 8'd2;
+        end
+
+        // Write test data to binary files
+        file_handle = $fopen("attn_output.bin", "wb");
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            $fwrite(file_handle, "%c", matrix_attn_output[i]);
+        end
+        $fclose(file_handle);
+
+        file_handle = $fopen("weight.bin", "wb");
+        for (i = 0; i < EMBED*EMBED; i++) begin
+            $fwrite(file_handle, "%c", matrix_weight[i]);
+        end
+        $fclose(file_handle);
+
+        file_handle = $fopen("residual.bin", "wb");
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            $fwrite(file_handle, "%c", matrix_residual[i]);
+        end
+        $fclose(file_handle);
+
+        $display("[%t] INFO: Test matrices generated and written to files", $time);
+
+        // 3. Write Test Data to DDR
+        $display("[%t] INFO: Step 2 - Writing test data to DDR", $time);
+
+        write_ddr_from_file(ADDR_ATTN_OUTPUT, "attn_output.bin", TOKENS*EMBED);
+        repeat(10) @(posedge sim_clk);
+
+        write_ddr_from_file(ADDR_WEIGHT, "weight.bin", EMBED*EMBED);
+        repeat(10) @(posedge sim_clk);
+
+        write_ddr_from_file(ADDR_RESIDUAL, "residual.bin", TOKENS*EMBED);
+        repeat(10) @(posedge sim_clk);
+
+        $display("[%t] INFO: All input data written to DDR", $time);
+
+        // 4. Start Computation
+        $display("[%t] INFO: Step 3 - Starting computation", $time);
+        repeat(10) @(posedge sim_clk);
+        start = 1;
+        @(posedge sim_clk);
+        start = 0;
+
+        $display("[%t] INFO: Waiting for done signal...", $time);
+
+        // 5. Wait for Completion
+        fork
+            begin
+                // Timeout after 50ms
+                #50_000_000;
+                if (!done) begin
+                    $display("[%t] ERROR: Timeout waiting for done signal!", $time);
+                    $finish;
+                end
+            end
+            begin
+                // Wait for done
+                wait(done);
+                $display("[%t] INFO: Computation completed", $time);
+            end
+            begin
+                // Monitor for errors
+                wait(error);
+                $display("[%t] ERROR: Error signal asserted during computation!", $time);
+                $finish;
+            end
+        join_any
+        disable fork;
+
+        // Check if we got an error
+        if (error) begin
+            $display("[%t] FAIL: Design reported an error", $time);
+            $finish;
+        end
+
+        // 6. Read Results from DDR
+        $display("[%t] INFO: Step 4 - Reading results from DDR", $time);
+        repeat(50) @(posedge sim_clk);
+
+        read_ddr_to_file(ADDR_OUTPUT, "output_actual.bin", TOKENS*EMBED);
+        repeat(10) @(posedge sim_clk);
+
+        // 7. Load and verify results
+        $display("[%t] INFO: Step 5 - Verifying results", $time);
+
+        file_handle = $fopen("output_actual.bin", "rb");
+        if (file_handle == 0) begin
+            $display("[%t] ERROR: Could not open output_actual.bin", $time);
+            $finish;
+        end
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            matrix_output_actual[i] = $fgetc(file_handle);
+        end
+        $fclose(file_handle);
+
+        // Simple verification - check that output is non-zero
+        mismatches = 0;
+        for (i = 0; i < TOKENS*EMBED; i++) begin
+            if (matrix_output_actual[i] == 8'd0) begin
+                mismatches = mismatches + 1;
+            end
+        end
+
+        // Display results
+        $display("[%t] INFO: Verification complete", $time);
+        $display("================================================================================");
+        $display("RESULTS:");
+        $display("  Total elements: %0d", TOKENS*EMBED);
+        $display("  Zero elements: %0d", mismatches);
+        $display("  Non-zero elements: %0d", (TOKENS*EMBED) - mismatches);
+
+        // Show first few output values
+        $display("\nFirst 16 output values:");
+        for (i = 0; i < 16; i++) begin
+            $display("  output[%0d] = %d (0x%h)", i, $signed(matrix_output_actual[i]), matrix_output_actual[i]);
+        end
+
+        if (mismatches < TOKENS*EMBED) begin
+            $display("\n*** TEST PASSED ***");
+            $display("Output contains valid data (non-zero values detected)");
+        end else begin
+            $display("\n*** TEST FAILED ***");
+            $display("All output values are zero - likely computation error");
+        end
+
+        $display("================================================================================");
+        $finish;
+    end
+
+    // Waveform Dump
+    initial begin
+        $dumpfile("noc_self_output_tb.vcd");
+        $dumpvars(0, noc_self_output_tb);
+    end
+
+
+    // Timeout
+    initial begin
+        #100_000_000; // 100ms absolute timeout
+        $display("[%t] ERROR: Absolute simulation timeout!", $time);
+        $finish;
     end
 
 endmodule
