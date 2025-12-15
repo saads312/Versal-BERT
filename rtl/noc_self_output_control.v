@@ -136,6 +136,56 @@ always @(posedge clk) begin
     end                                                                                                                                          
 end 
 
+// Output logic - pulse DMA/compute starts on state transitions here                                                                                  
+always @(posedge clk) begin                                                                                                                      
+    if (!rstn) begin                                                                                                                             
+        start_dma_attn <= 1'b0;                                                                                                                  
+        start_dma_weight <= 1'b0;                                                                                                                
+        start_dma_residual <= 1'b0;                                                                                                              
+        start_dma_out <= 1'b0;                                                                                                                   
+        start_compute <= 1'b0;                                                                                                                   
+        done <= 1'b0;                                                                                                                            
+        error <= 1'b0;                                                                                                                           
+    end else begin                                                                                                                               
+        // Default - pulses are one clock cycle                                                                                                  
+        start_dma_attn <= 1'b0;                                                                                                                  
+        start_dma_weight <= 1'b0;                                                                                                                
+        start_dma_residual <= 1'b0;                                                                                                              
+        start_dma_out <= 1'b0;                                                                                                                   
+        start_compute <= 1'b0;                                                                                                                   
+                                                                                                                                                
+        // Pulse start signals on state entry, load attention output                                                                                                                                                                                                               
+        if (state == LOAD_ATTN && prev_state != LOAD_ATTN) begin                                                                                 
+            start_dma_attn <= 1'b1;                                                                                                              
+            $display("[%t] SELF_OUTPUT FSM: Pulsing start_dma_attn", $time);                                                                     
+        end                                                                                                                                      
+                                                                                                                                                
+        // Load weight                                                                                                                           
+        if (state == LOAD_WEIGHT && prev_state != LOAD_WEIGHT) begin                                                                             
+            start_dma_weight <= 1'b1;                                                                                                            
+            $display("[%t] SELF_OUTPUT FSM: Pulsing start_dma_weight", $time);                                                                   
+        end                                                                                                                                      
+                                                                                                                                                
+        // Load residual                                                                                                                         
+        if (state == LOAD_RESIDUAL && prev_state != LOAD_RESIDUAL) begin                                                                         
+            start_dma_residual <= 1'b1;                                                                                                          
+            $display("[%t] SELF_OUTPUT FSM: Pulsing start_dma_residual", $time);                                                                 
+        end                                                                                                                                      
+                                                                                                                                                
+        // Start compute and write DMA at compute entry                                                                                          
+        // The pipeline here: mm->requant->mat_add->layernorm->requant->write_dma, is streaming, so write DMA must be ready before data arrives                                                                                        
+        if (state == COMPUTE && prev_state != COMPUTE) begin                                                                                     
+            start_compute <= 1'b1;                                                                                                               
+            start_dma_out <= 1'b1;                                                                                                               
+            $display("[%t] SELF_OUTPUT FSM: Pulsing start_compute and start_dma_out", $time);                                                    
+        end                                                                                                                                      
+                                                                                                                                                
+        // Status outputs                                                                                                                        
+        done <= (state == DONE_STATE);                                                                                                           
+        error <= (state == ERROR_STATE);                                                                                                         
+    end                                                                                                                                          
+end                                                                                                                                                                                                                                                                                      
+
 
                                                                                                                                                   
  endmodule
