@@ -127,5 +127,63 @@ module noc_self_output_tb;
     reg [7:0] matrix_output_expected [0:TOKENS*EMBED-1];
     reg [7:0] matrix_output_actual [0:TOKENS*EMBED-1];
 
+    //==========================================================================
+    // CIPS VIP Memory Tasks
+    //==========================================================================
+    // NOTE: Hierarchy path to VIP must match the instantiated design_1 instance
+    // Inside design_1_wrapper_self_output, the BD instance is named "design_1_i"
+
+    task write_ddr_from_file(
+        input [63:0] addr,
+        input [1023:0] filename,
+        input [31:0] num_bytes
+    );
+        automatic bit [1:0] resp;
+        begin
+            dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.write_from_file(
+                "NOC_API", filename, addr, num_bytes, resp
+            );
+            if (resp != 0)
+                $display("[%t] ERROR: NoC write_from_file to 0x%h failed resp=%0d", $time, addr, resp);
+            else
+                $display("[%t] INFO: Wrote %d bytes from file %s to 0x%h", $time, num_bytes, filename, addr);
+        end
+    endtask
+
+    task read_ddr_to_file(
+        input [63:0] addr,
+        input [1023:0] filename,
+        input [31:0] num_bytes
+    );
+        automatic bit [1:0] resp;
+        begin
+            dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.read_to_file(
+                "NOC_API", filename, addr, num_bytes, resp
+            );
+            if (resp != 0)
+                $display("[%t] ERROR: NoC read_to_file from 0x%h failed resp=%0d", $time, addr, resp);
+            else
+                $display("[%t] INFO: Read %d bytes from 0x%h to file %s", $time, num_bytes, addr, filename);
+        end
+    endtask
+
+    //==========================================================================
+    // CIPS Initialization
+    //==========================================================================
+    initial begin
+        repeat(10) @(posedge sim_clk);
+        // Reset and clock generation for the VIP
+        dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.pl_gen_clock(0, 300);
+        force dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.versal_cips_ps_vip_clk = sim_clk;
+        dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.por_reset(0);
+        repeat(20) @(posedge sim_clk);
+        dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.por_reset(1);
+        repeat(50) @(posedge sim_clk);
+
+        // Force PL reset inactive (active low logic usually handled by CIPS, but forcing helps sim)
+        force dut.rstn_pl = 1'b1;
+
+        $display("[%t] INFO: CIPS VIP initialized", $time);
+    end
 
 endmodule
