@@ -944,21 +944,6 @@ always @(posedge clk) begin
 end
 assign compute_done = compute_output_complete;
 
-// Compute done detection - will be based on mm_ln output tlast
-reg compute_output_complete;
-always @(posedge clk) begin
-    if (!rstn) begin
-        compute_output_complete <= 1'b0;
-    end else begin
-        if (start_compute) begin
-            compute_output_complete <= 1'b0;
-        end else if (axis_output_tvalid && axis_output_tready && axis_output_tlast) begin
-            compute_output_complete <= 1'b1;
-        end
-    end
-end
-assign compute_done = compute_output_complete;
-
 //============================================================================
 // Write DMA for Output
 //============================================================================
