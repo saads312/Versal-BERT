@@ -130,6 +130,113 @@ set count [regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_
     content]
 puts "       REG_ADDR_MASK0: $count replacements"
 
+# Patch axi_noc_0 NMU instances (CIPS to DDR connections)
+puts "INFO: Patching axi_noc_0 NMU instances..."
+
+# S00_AXI_nmu
+puts "INFO: Patching S00_AXI_nmu routing..."
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S00_AXI_nmu\.bd_8be5_S00_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S00_AXI_nmu.bd_8be5_S00_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S00_AXI_nmu\.bd_8be5_S00_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S00_AXI_nmu.bd_8be5_S00_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S00_AXI_nmu\.bd_8be5_S00_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S00_AXI_nmu.bd_8be5_S00_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S00_AXI_nmu\.bd_8be5_S00_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S00_AXI_nmu.bd_8be5_S00_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
+
+# S01_AXI_nmu
+puts "INFO: Patching S01_AXI_nmu routing..."
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S01_AXI_nmu\.bd_8be5_S01_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S01_AXI_nmu.bd_8be5_S01_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S01_AXI_nmu\.bd_8be5_S01_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S01_AXI_nmu.bd_8be5_S01_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S01_AXI_nmu\.bd_8be5_S01_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S01_AXI_nmu.bd_8be5_S01_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S01_AXI_nmu\.bd_8be5_S01_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S01_AXI_nmu.bd_8be5_S01_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
+
+# S02_AXI_nmu
+puts "INFO: Patching S02_AXI_nmu routing..."
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S02_AXI_nmu\.bd_8be5_S02_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S02_AXI_nmu.bd_8be5_S02_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S02_AXI_nmu\.bd_8be5_S02_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S02_AXI_nmu.bd_8be5_S02_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S02_AXI_nmu\.bd_8be5_S02_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S02_AXI_nmu.bd_8be5_S02_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S02_AXI_nmu\.bd_8be5_S02_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S02_AXI_nmu.bd_8be5_S02_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
+
+# S03_AXI_nmu
+puts "INFO: Patching S03_AXI_nmu routing..."
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S03_AXI_nmu\.bd_8be5_S03_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S03_AXI_nmu.bd_8be5_S03_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    content]
+puts "       REG_ADDR_ENABLE: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S03_AXI_nmu\.bd_8be5_S03_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S03_AXI_nmu.bd_8be5_S03_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    content]
+puts "       REG_ADDR_DST0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S03_AXI_nmu\.bd_8be5_S03_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S03_AXI_nmu.bd_8be5_S03_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    content]
+puts "       REG_ADDR_MADDR0: $count replacements"
+
+set count [regsub {defparam design_1_i\.axi_noc_0\.inst\.S03_AXI_nmu\.bd_8be5_S03_AXI_nmu_0_top_INST\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h[0-9A-Fa-f]+;} \
+    $content \
+    "defparam design_1_i.axi_noc_0.inst.S03_AXI_nmu.bd_8be5_S03_AXI_nmu_0_top_INST.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    content]
+puts "       REG_ADDR_MASK0: $count replacements"
+
 # Write the patched content back
 puts "INFO: Writing patched defparams.vh..."
 set fp [open $defparams_file w]
@@ -142,8 +249,14 @@ puts "       DestId = 0x${dest_id} (route to DDR MC Port0)"
 puts "       Base Address = 0x${base_addr}"
 puts "       Address Mask = 0x${addr_mask} (2GB range)"
 puts "       Address Enable = 0x${addr_enable} (entry 0 enabled)"
-puts "INFO: Patched 4 XPM_NMU instances:"
+puts "INFO: Patched 8 NMU instances total:"
+puts "       XPM_NMU instances (4):"
 puts "       - xpm_nmu_attn_read"
 puts "       - xpm_nmu_weight_read"
 puts "       - xpm_nmu_residual_read"
 puts "       - xpm_nmu_output_write"
+puts "       AXI_NOC_0 instances (4):"
+puts "       - S00_AXI_nmu"
+puts "       - S01_AXI_nmu"
+puts "       - S02_AXI_nmu"
+puts "       - S03_AXI_nmu"
