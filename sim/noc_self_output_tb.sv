@@ -127,9 +127,9 @@ module noc_self_output_tb;
     reg [7:0] matrix_output_expected [0:TOKENS*EMBED-1];
     reg [7:0] matrix_output_actual [0:TOKENS*EMBED-1];
 
-    
+
     // CIPS VIP Memory Tasks
-    
+
     // NOTE: Hierarchy path to VIP must match the instantiated design_1 instance
     // Inside design_1_wrapper_self_output, the BD instance is named "design_1_i"
 
@@ -169,7 +169,7 @@ module noc_self_output_tb;
 
     
     // CIPS Initialization
-    
+
     initial begin
         repeat(10) @(posedge sim_clk);
         // Reset and clock generation for the VIP
@@ -219,10 +219,11 @@ module noc_self_output_tb;
         // Wait for VIP initialization
         repeat(300) @(posedge sim_clk);
 
-        // Configure NoC Routing via VIP
+        // Configure NoC routing after CIPS initialization
         dut.design_1_i.versal_cips_0.inst.pspmc_0.inst.PS9_VIP_inst.inst.set_routing_config(
             "NOC_API", "FPD_CCI_NOC", 1
         );
+        $display("[%t] INFO: NoC routing configured", $time);
 
         // 2. Generate Test Data
         $display("[%t] INFO: Step 1 - Generating Test Matrices", $time);

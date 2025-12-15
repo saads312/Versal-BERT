@@ -13,6 +13,10 @@ set fp [open $defparams_file r]
 set content [read $fp]
 close $fp
 
+# Normalize all NMU instance names to match the 128-bit NMU that is instantiated
+# (the generated defparams may still carry "NOC_NMU512_INST" strings)
+regsub -all {NOC_NMU512_INST} $content {NOC_NMU128_INST} content
+
 # Configuration for routing to DDR MC at base address 0x0, size 2GB
 # DestId = 0 (from design_1_wrapper_self_output.ncr)
 # Base = 0x00000000
@@ -24,90 +28,90 @@ set addr_mask "7FFFFFFF"
 
 # Patch xpm_nmu_attn_read (Read Attention Output from DDR)
 puts "INFO: Patching xpm_nmu_attn_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_DST0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_attn_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_attn_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
     content
 
 # Patch xpm_nmu_weight_read (Read W_self_output from DDR)
 puts "INFO: Patching xpm_nmu_weight_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_DST0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_weight_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_weight_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
     content
 
 # Patch xpm_nmu_residual_read (Read Residual from DDR)
 puts "INFO: Patching xpm_nmu_residual_read routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_DST0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_residual_read\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_residual_read.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
     content
 
 # Patch xpm_nmu_output_write (Write final output to DDR)
 puts "INFO: Patching xpm_nmu_output_write routing..."
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_ENABLE = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_ENABLE = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_ENABLE = 'h${addr_enable};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_DST0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_DST0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_DST0 = 'h${dest_id};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_DST0 = 'h${dest_id};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MADDR0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MADDR0 = 'h${base_addr};" \
     content
 
-regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU512_INST\.REG_ADDR_MASK0 = 'h00000000;} \
+regsub {defparam design_1_wrapper_self_output_i\.noc_self_output_top_inst\.xpm_nmu_output_write\.NOC1\.VNOC\.NOC_NMU[0-9]+_INST\.REG_ADDR_MASK0 = 'h00000000;} \
     $content \
-    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU512_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
+    "defparam design_1_wrapper_self_output_i.noc_self_output_top_inst.xpm_nmu_output_write.NOC1.VNOC.NOC_NMU128_INST.REG_ADDR_MASK0 = 'h${addr_mask};" \
     content
 
 # Write the patched content back
