@@ -10,16 +10,21 @@
 // ============================================================================
 // IBERT Model Parameters (Independent)
 // ============================================================================
+// Available configurations (all satisfy HEAD_DIM % 2 == 0 and TOKENS % 2 == 0):
+//
+// CONFIG        | TOKENS | EMBED | HEADS | HEAD_DIM | Proj Size      | Sim Time | Use Case
+// --------------|--------|-------|-------|----------|----------------|----------|------------------
+// Minimal       | 16     | 32    | 4     | 8        | 16x32 → 16x8   | ~1 min   | Fastest testing
+// Tiny          | 32     | 64    | 8     | 8        | 32x64 → 32x8   | ~3 min   | Fast iteration
+// Small      ⭐ | 32     | 128   | 8     | 16       | 32x128 → 32x16 | ~5 min   | Good middle ground
+// Medium        | 32     | 256   | 8     | 32       | 32x256 → 32x32 | ~10 min  | Larger tests
+// Medium-Plus   | 32     | 384   | 12    | 32       | 32x384 → 32x32 | ~15 min  | Pre-Base validation
+// Base (BERT)   | 32     | 768   | 12    | 64       | 32x768 → 32x64 | ~25 min  | Full BERT
 
-// Sequence length (number of tokens)
-parameter TOKENS = 32;       // Full IBERT: 32
-// set it to 2 to get it done in 12.354
-// Embedding dimension (hidden size)
-parameter EMBED = 64;       // Full IBERT: 768
-// set it to 16 to get it done in 12.354
-// Number of attention heads
-parameter NUM_HEADS = 12;    // Full IBERT: 12 → HEAD_DIM = 16
-// set it to 4 to get it done in 12.354
+// Active configuration: Small
+parameter TOKENS = 32;
+parameter EMBED = 128;
+parameter NUM_HEADS = 8;
 // ============================================================================
 // Derived Parameters (from matrix multiply constraints)
 // ============================================================================

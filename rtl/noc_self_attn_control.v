@@ -440,9 +440,11 @@ always @(posedge clk) begin
 
         // Softmax control pulse and P write DMA
         // Note: S values stream directly from MM output to softmax (no DDR round-trip)
-        if (state == SOFTMAX && prev_state != SOFTMAX) begin
-            start_softmax <= 1'b1;
-            start_dma_p <= 1'b1;  // Start P write DMA for softmax output
+        // Start DMA for P and reset softmax counter at COMPUTE_S entry since softmax
+        // outputs during COMPUTE_S (current_op is set to OP_SOFTMAX, enabling softmax data path)
+        if (state == COMPUTE_S && prev_state != COMPUTE_S) begin
+            start_dma_p <= 1'b1;    // Start P write DMA early for softmax output
+            start_softmax <= 1'b1;  // Reset softmax output counter before outputs start
         end
 
         // Context computation DMA pulses

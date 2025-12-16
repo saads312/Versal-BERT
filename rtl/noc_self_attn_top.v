@@ -244,6 +244,15 @@ always @(*) begin
             dma_out_addr = addr_P;
             dma_a_size = size_S;
             dma_out_size = size_P;
+            // CRITICAL: Keep attention dimensions during softmax computation
+            // (current_op switches to OP_SOFTMAX in COMPUTE_S state while MM is still running)
+            mm_M2 = ATTN_M2;
+            mm_M3 = ATTN_M3;
+            mm_M1dN1 = ATTN_M1 / N1;
+            mm_M3dN2 = ATTN_M3 / N2;
+            mm_M1xM3dN1 = (ATTN_M1 * ATTN_M3) / N1;
+            mm_M1xM3dN1xN2 = (ATTN_M1 * ATTN_M3) / (N1 * N2);
+            mm_transpose_b = 1'b1;
         end
 
         OP_CONTEXT: begin
@@ -744,12 +753,18 @@ softmax #(
 );
 
 // Softmax tlast generation (after N×N elements)
+// Count all outputs produced, not just accepted (tready doesn't gate the count)
 reg [$clog2(TOKENS*TOKENS):0] softmax_out_count;
 always @(posedge clk) begin
     if (!rstn || start_softmax) begin
         softmax_out_count <= 0;
-    end else if (axis_softmax_out_tvalid && axis_softmax_out_tready) begin
+    end else if (axis_softmax_out_tvalid) begin
         softmax_out_count <= softmax_out_count + 1;
+        if (softmax_out_count >= TOKENS * TOKENS - 5)
+            $display("[%t] SOFTMAX_TLAST: count=%0d/%0d tvalid=%b tready=%b tlast=%b",
+                     $time, softmax_out_count, TOKENS*TOKENS-1,
+                     axis_softmax_out_tvalid, axis_softmax_out_tready,
+                     (softmax_out_count == TOKENS * TOKENS - 1));
     end
 end
 assign axis_softmax_out_tlast = (softmax_out_count == TOKENS * TOKENS - 1) &&
