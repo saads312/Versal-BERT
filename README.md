@@ -1,14 +1,14 @@
 # Mapping iBERT to AMD Versal Network-on-Chip
 
-This project maps a BERT-style (iBERT) encoder datapath onto the AMD Versal hardened Network-on-Chip (NoC). The emphasis is system integration: streaming quantized tensors through DDR → NoC → DMA → AXI-Stream → PL compute → AXI-Stream → DMA → NoC → DDR, and validating correctness under realistic NoC/AXI constraints.
+This project maps a BERT-style (iBERT) encoder datapath onto the AMD Versal hardened Network-on-Chip (NoC). The system is roughly integrated as follows: DDR → NoC → DMA → AXI-Stream → PL compute → AXI-Stream → DMA → NoC → DDR, and validating correctness under realistic NoC/AXI constraints.
 
 ## Architecture Overview
 
 DDR-backed buffers are accessed through NoC endpoints (XPM NMUs). Read DMAs convert AXI memory-mapped reads into AXI-Stream for PL compute blocks. Write DMAs commit AXI-Stream outputs back to DDR through the NoC.
 
-DDR (A) → XPM_NMU → NoC → Read DMA → AXI-Stream ┐
-├→ PL Compute (e.g., systolic MM) → AXI-Stream → Write DMA → NoC → XPM_NMU → DDR (out)
-DDR (B) → XPM_NMU → NoC → Read DMA → AXI-Stream ┘
+DDR (Matrix A) ──> XPM_NMU ──> NoC ──> Read DMA ──> AXI-Stream   ─┐
+                                                                  │
+DDR (Matrix B) ──> XPM_NMU ──> NoC ──> Read DMA ──> AXI-Stream  ──┼──> Systolic MM (2x2) ──> AXI-Stream ──> Write DMA ──> NoC ──> XPM_NMU ──> DDR (Result)
 
 This transport pattern is reused for attention projections and other encoder stages.
 
