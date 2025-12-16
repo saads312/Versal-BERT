@@ -101,9 +101,12 @@ always @(posedge clk) begin
         qin_r <= qin;
         in_v_r <= in_valid;
         Sreq_r <= Sreq;
-        
+
+        if (in_valid)
+            $display("[%t] SOFTMAX: Received input %0d (qmax_cntr=%0d, N=%0d)", $time, qin, qmax_cntr, N);
+
         qmax_out_v <= 0;
-        
+
         if (in_v_r) begin
             qmax_cntr <= qmax_cntr + 1;
             if (qmax_cntr == N-1) begin
@@ -222,7 +225,7 @@ always @(posedge clk) begin
             if (qdiv_cntr == N-1) begin
                 qdiv_cntr <= 0;
             end
-            if (qdiv_cntr == 31) begin
+            if (qdiv_cntr == N-1) begin
                 qdiv_out_v_r <= 1;
             end
         end
@@ -270,8 +273,8 @@ always @(posedge clk) begin
         qout_r    <= qout_mul >> SHIFT;
         qout_v_r2 <= qout_v_r1;
 
-        // if (qout_v_r1)
-        //     $display("#time=%0d, qreq=%0d,qdiv=%0d,res=%0d",$time,div_buf_rddata,qdiv_out_r1,qout_mul >> SHIFT);
+        if (qout_v_r2)
+            $display("[%t] SOFTMAX: Output %0d (qout_cntr=%0d)", $time, qout_r, qout_cntr);
     end
 end
 
