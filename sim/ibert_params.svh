@@ -23,7 +23,7 @@
 
 // Active configuration: Small
 parameter TOKENS = 32;
-parameter EMBED = 128;
+parameter EMBED = 256;
 parameter NUM_HEADS = 8;
 // ============================================================================
 // Derived Parameters (from matrix multiply constraints)
