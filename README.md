@@ -23,7 +23,7 @@ This transport pattern is reused for attention projections and other encoder sta
 DDR/VIP simulation observability is limited, so correctness is validated primarily using SystemVerilog backdoor inspection at key stream boundaries (payload ordering, completeness, and stage boundary values) prior to full closure with the Vivado NoC compiler flow.
 
 Run simulation:
-source /zfsspare/opt/Xilinx/2025.1/Vivado/settings64.sh && (vivado -mode batch -source scripts/build_simulation.tcl 2>&1 | tee build.log) && cd noc_mm_sim/noc_mm_sim.sim/sim_1/behav/xsim && (xsim noc_mm_tb_behav -runall 2>&1 | tee ../../../../sim.log)
+- source /zfsspare/opt/Xilinx/2025.1/Vivado/settings64.sh && (vivado -mode batch -source scripts/build_simulation.tcl 2>&1 | tee build.log) && cd noc_mm_sim/noc_mm_sim.sim/sim_1/behav/xsim && (xsim noc_mm_tb_behav -runall 2>&1 | tee ../../../../sim.log)
 
 ## Scaling constraints for valid configurations:
 
