@@ -88,6 +88,29 @@ wire start_gelu, gelu_done;
 //============================================================================
 // Control FSM
 //============================================================================
+noc_inter_control control_fsm (
+    .clk(clk),
+    .rstn(rstn),
+    .start(start),
+    .done(done),
+    .error(error),
+    .start_dma_a(start_dma_a),
+    .start_dma_k(start_dma_k),
+    .start_dma_g(start_dma_g),
+    .start_requant_mm(start_requant_mm),
+    .requant_mm_done(requant_mm_done),
+    .start_requant_gelu(start_requant_gelu),
+    .requant_gelu_done(requant_gelu_done),
+    .dma_a_done(dma_a_done),
+    .dma_k_done(dma_k_done),
+    .dma_g_done(dma_g_done),
+    .dma_a_error(dma_a_error),
+    .dma_k_error(dma_k_error),
+    .dma_g_error(dma_g_error),
+    .mm_done(mm_done),
+    .start_gelu(start_gelu),
+    .gelu_done(gelu_done)
+);
 
 //============================================================================
 // AXI4 Signals for Input A Read Path

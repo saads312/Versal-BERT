@@ -58,20 +58,20 @@ if {[file exists ${sim_dir}/noc_inter_tb.sv]} {
 puts "INFO: Adding RTL sources with XPM NoC instances..."
 
 # Import all RTL files including SystemVerilog modules
-import_files -norecurse [glob ${rtl_dir}/*.v]
+# import_files -norecurse [glob ${rtl_dir}/*.v]
 import_files -norecurse [glob ${rtl_dir}/*.sv]
 
-# # Import Verilog files
-# import_files -norecurse ${rtl_dir}/axi4_read_dma.v
-# import_files -norecurse ${rtl_dir}/axi4_write_dma.v
-# import_files -norecurse ${rtl_dir}/noc_inter_control.v
-# import_files -norecurse ${rtl_dir}/noc_inter_top.v
-# if {[file exists ${rtl_dir}/noc_mm_control.v]} {
-#     import_files -norecurse ${rtl_dir}/noc_mm_control.v
-# }
-# if {[file exists ${rtl_dir}/noc_mm_top.v]} {
-#     import_files -norecurse ${rtl_dir}/noc_mm_top.v
-# }
+# Import Verilog files
+import_files -norecurse ${rtl_dir}/axi4_read_dma.v
+import_files -norecurse ${rtl_dir}/axi4_write_dma.v
+import_files -norecurse ${rtl_dir}/noc_inter_control.v
+import_files -norecurse ${rtl_dir}/noc_inter_top.v
+if {[file exists ${rtl_dir}/noc_mm_control.v]} {
+    import_files -norecurse ${rtl_dir}/noc_mm_control.v
+}
+if {[file exists ${rtl_dir}/noc_mm_top.v]} {
+    import_files -norecurse ${rtl_dir}/noc_mm_top.v
+}
 
 # Import the top-level wrapper that combines BD + RTL (SystemVerilog for parameter include)
 import_files -norecurse ${rtl_dir}/design_1_wrapper_inter.sv

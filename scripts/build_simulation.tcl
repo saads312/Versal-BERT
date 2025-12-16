@@ -4,7 +4,7 @@
 # Tests Q/K/V projections for IBERT self-attention
 #
 
-set project_name "noc_mm_sim"
+set project_name "noc_attn_proj_sim"
 set project_dir "[file normalize .]"
 set rtl_dir "${project_dir}/rtl"
 set bd_dir "${project_dir}/bd"
