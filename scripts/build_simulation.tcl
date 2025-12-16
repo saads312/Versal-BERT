@@ -1,7 +1,7 @@
 #
-# Simulation Build Script for NoC Attention Projection Design
+# Simulation Build Script for NoC Self-Attention Design
 # Based on Vivado-Design-Tutorials/Versal NoC simulation flow
-# Tests Q/K/V projections for IBERT self-attention
+# Tests complete IBERT self-attention: Q/K/V projections → S → Softmax → C'
 #
 
 set project_name "noc_mm_sim"
@@ -43,14 +43,22 @@ set_property include_dirs [list ${sim_dir}] [get_filesets sources_1]
 set_property include_dirs [list ${sim_dir}] [get_filesets sim_1]
 
 # Add testbench to sim_1 fileset
-# Use noc_attn_proj_tb for attention projection testing
-if {[file exists ${sim_dir}/noc_attn_proj_tb.sv]} {
+# Priority: self-attention > projection > basic MM
+if {[file exists ${sim_dir}/noc_self_attn_tb.sv]} {
+    # Full self-attention testbench (Q/K/V → S → Softmax → C')
+    import_files -fileset sim_1 ${sim_dir}/noc_self_attn_tb.sv
+    set_property top noc_self_attn_tb [get_filesets sim_1]
+    puts "INFO: Using noc_self_attn_tb for full self-attention testing"
+} elseif {[file exists ${sim_dir}/noc_attn_proj_tb.sv]} {
+    # Q/K/V projection only testbench
     import_files -fileset sim_1 ${sim_dir}/noc_attn_proj_tb.sv
     set_property top noc_attn_proj_tb [get_filesets sim_1]
+    puts "INFO: Using noc_attn_proj_tb for projection testing"
 } elseif {[file exists ${sim_dir}/noc_mm_tb.sv]} {
     # Fallback to original MM testbench
     import_files -fileset sim_1 ${sim_dir}/noc_mm_tb.sv
     set_property top noc_mm_tb [get_filesets sim_1]
+    puts "INFO: Using noc_mm_tb for basic MM testing"
 }
 
 #####################################################
@@ -61,11 +69,25 @@ puts "INFO: Adding RTL sources with XPM NoC instances..."
 # Import all RTL files including SystemVerilog modules
 import_files -norecurse [glob ${rtl_dir}/*.sv]
 
-# Import Verilog files
+# Import Verilog files - DMA modules
 import_files -norecurse ${rtl_dir}/axi4_read_dma.v
 import_files -norecurse ${rtl_dir}/axi4_write_dma.v
+
+# Self-attention modules (full attention: Q/K/V → S → Softmax → C')
+if {[file exists ${rtl_dir}/noc_self_attn_control.v]} {
+    import_files -norecurse ${rtl_dir}/noc_self_attn_control.v
+    puts "INFO: Added noc_self_attn_control.v"
+}
+if {[file exists ${rtl_dir}/noc_self_attn_top.v]} {
+    import_files -norecurse ${rtl_dir}/noc_self_attn_top.v
+    puts "INFO: Added noc_self_attn_top.v"
+}
+
+# Q/K/V projection modules (legacy, used as reference)
 import_files -norecurse ${rtl_dir}/noc_attn_proj_control.v
 import_files -norecurse ${rtl_dir}/noc_attn_proj_top.v
+
+# Basic MM modules (fallback)
 if {[file exists ${rtl_dir}/noc_mm_control.v]} {
     import_files -norecurse ${rtl_dir}/noc_mm_control.v
 }
