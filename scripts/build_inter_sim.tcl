@@ -1,10 +1,9 @@
 #
-# Simulation Build Script for NoC Self-Attention Design
-# Based on Vivado-Design-Tutorials/Versal NoC simulation flow
-# Tests complete IBERT self-attention: Q/K/V projections → S → Softmax → C'
+# Simulation Build Script for NoC Intermediate Stage Design
+# Tests Matrix Multiply + GELU + Requantization
 #
 
-set project_name "noc_attn_proj_sim"
+set project_name "noc_inter_sim"
 set project_dir "[file normalize .]"
 set rtl_dir "${project_dir}/rtl"
 set bd_dir "${project_dir}/bd"
@@ -29,9 +28,9 @@ puts "INFO: Generating Block Design with NoC and DDR..."
 source ${bd_dir}/bd_with_noc.tcl
 
 #####################################################
-# Add Simulation Sources FIRST
+# Add Simulation Sources
 #####################################################
-puts "INFO: Adding simulation testbench..."
+puts "INFO: Adding simulation sources..."
 
 # Add parameter file to include path
 # This allows `include "ibert_params.svh" to work
@@ -43,22 +42,14 @@ set_property include_dirs [list ${sim_dir}] [get_filesets sources_1]
 set_property include_dirs [list ${sim_dir}] [get_filesets sim_1]
 
 # Add testbench to sim_1 fileset
-# Priority: self-attention > projection > basic MM
-if {[file exists ${sim_dir}/noc_self_attn_tb.sv]} {
-    # Full self-attention testbench (Q/K/V → S → Softmax → C')
-    import_files -fileset sim_1 ${sim_dir}/noc_self_attn_tb.sv
-    set_property top noc_self_attn_tb [get_filesets sim_1]
-    puts "INFO: Using noc_self_attn_tb for full self-attention testing"
-} elseif {[file exists ${sim_dir}/noc_attn_proj_tb.sv]} {
-    # Q/K/V projection only testbench
-    import_files -fileset sim_1 ${sim_dir}/noc_attn_proj_tb.sv
-    set_property top noc_attn_proj_tb [get_filesets sim_1]
-    puts "INFO: Using noc_attn_proj_tb for projection testing"
+# Use noc_inter_tb for intermediate block testing
+if {[file exists ${sim_dir}/noc_inter_tb.sv]} {
+    import_files -fileset sim_1 ${sim_dir}/noc_inter_tb.sv
+    set_property top noc_inter_tb [get_filesets sim_1]
 } elseif {[file exists ${sim_dir}/noc_mm_tb.sv]} {
     # Fallback to original MM testbench
     import_files -fileset sim_1 ${sim_dir}/noc_mm_tb.sv
     set_property top noc_mm_tb [get_filesets sim_1]
-    puts "INFO: Using noc_mm_tb for basic MM testing"
 }
 
 #####################################################
@@ -67,27 +58,14 @@ if {[file exists ${sim_dir}/noc_self_attn_tb.sv]} {
 puts "INFO: Adding RTL sources with XPM NoC instances..."
 
 # Import all RTL files including SystemVerilog modules
+# import_files -norecurse [glob ${rtl_dir}/*.v]
 import_files -norecurse [glob ${rtl_dir}/*.sv]
 
-# Import Verilog files - DMA modules
+# Import Verilog files
 import_files -norecurse ${rtl_dir}/axi4_read_dma.v
 import_files -norecurse ${rtl_dir}/axi4_write_dma.v
-
-# Self-attention modules (full attention: Q/K/V → S → Softmax → C')
-if {[file exists ${rtl_dir}/noc_self_attn_control.v]} {
-    import_files -norecurse ${rtl_dir}/noc_self_attn_control.v
-    puts "INFO: Added noc_self_attn_control.v"
-}
-if {[file exists ${rtl_dir}/noc_self_attn_top.v]} {
-    import_files -norecurse ${rtl_dir}/noc_self_attn_top.v
-    puts "INFO: Added noc_self_attn_top.v"
-}
-
-# Q/K/V projection modules (legacy, used as reference)
-import_files -norecurse ${rtl_dir}/noc_attn_proj_control.v
-import_files -norecurse ${rtl_dir}/noc_attn_proj_top.v
-
-# Basic MM modules (fallback)
+import_files -norecurse ${rtl_dir}/noc_inter_control.v
+import_files -norecurse ${rtl_dir}/noc_inter_top.v
 if {[file exists ${rtl_dir}/noc_mm_control.v]} {
     import_files -norecurse ${rtl_dir}/noc_mm_control.v
 }
@@ -96,19 +74,10 @@ if {[file exists ${rtl_dir}/noc_mm_top.v]} {
 }
 
 # Import the top-level wrapper that combines BD + RTL (SystemVerilog for parameter include)
-import_files -norecurse ${rtl_dir}/design_1_wrapper.sv
+import_files -norecurse ${rtl_dir}/design_1_wrapper_inter.sv
 
 # Set top module to the wrapper (combines block design and RTL)
-set_property top design_1_wrapper [current_fileset]
-
-#####################################################
-# Add NoC constraints XDC (DISABLED - using TCL instead)
-#####################################################
-# NOTE: NoC connections are now created via TCL commands before validate_noc
-# XDC constraints don't work reliably because they run before RTL elaboration
-#puts "INFO: Adding NoC constraints..."
-#import_files -fileset constrs_1 ${xdc_dir}/noc_constraints_sim.xdc
-#set_property USED_IN {synthesis_pre} [get_files noc_constraints_sim.xdc]
+set_property top design_1_wrapper_inter [current_fileset]
 
 #####################################################
 # Generate ALL targets BEFORE validate_noc (AMD pattern)
@@ -127,7 +96,7 @@ update_compile_order -fileset sources_1
 # CRITICAL: In simulation-only flow, XDC doesn't run, must source as TCL
 #####################################################
 puts "INFO: Sourcing NoC constraints TCL commands..."
-source ${xdc_dir}/noc_constraints_sim.xdc
+source ${xdc_dir}/noc_constraints_inter_sim.xdc
 
 #####################################################
 # Validate NoC - will use connections created above
@@ -141,7 +110,7 @@ validate_noc
 # validate_noc doesn't populate XPM_NMU routing in simulation-only flow
 #####################################################
 puts "INFO: Patching defparams.vh with NoC routing configuration..."
-source ${project_dir}/scripts/patch_defparams.tcl
+source ${project_dir}/scripts/patch_defparams_inter.tcl
 
 #####################################################
 # Simulation Settings

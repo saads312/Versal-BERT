@@ -10,6 +10,8 @@
 .cache/
 noc_mm_project/
 noc_mm_sim/
+noc_attn_proj_sim/
+noc_inter_sim/
 *.wdb
 *.wcfg
 xsim.dir/
