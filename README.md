@@ -12,7 +12,7 @@ DDR (Matrix B) ──> XPM_NMU ──> NoC ──> Read DMA ──> AXI-Stream  
 
 This transport pattern is reused for attention projections and other encoder stages.
 
-![datapath pic](722_datapath.svg)
+![datapath pic](/assets/722_datapath.svg)
 
 ## Methodology
 
